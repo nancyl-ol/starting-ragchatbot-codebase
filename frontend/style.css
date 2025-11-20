@@ -792,8 +792,8 @@ details[open] .suggested-header::before {
     position: fixed;
     top: 1.5rem;
     right: 1.5rem;
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     background: var(--surface);
     border: 2px solid var(--border-color);
@@ -801,43 +801,51 @@ details[open] .suggested-header::before {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1000;
-    box-shadow: var(--shadow);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
 }
 
 .theme-toggle:hover {
-    background: var(--surface-hover);
+    background: var(--primary-color);
     border-color: var(--primary-color);
-    transform: scale(1.05);
+    transform: scale(1.1) rotate(15deg);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+}
+
+.theme-toggle:hover svg {
+    color: white;
 }
 
 .theme-toggle:focus {
     outline: none;
-    box-shadow: 0 0 0 3px var(--focus-ring);
+    box-shadow: 0 0 0 3px var(--focus-ring), 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .theme-toggle:active {
-    transform: scale(0.95);
+    transform: scale(0.98) rotate(0deg);
+    transition: all 0.1s ease;
 }
 
 /* Theme Toggle Icons */
 .theme-toggle svg {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     color: var(--text-primary);
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .theme-toggle .sun-icon,
 .theme-toggle .moon-icon {
     position: absolute;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .theme-toggle .sun-icon {
     opacity: 0;
-    transform: rotate(-90deg) scale(0.5);
+    transform: rotate(-180deg) scale(0.3);
 }
 
 .theme-toggle .moon-icon {
@@ -852,19 +860,23 @@ body.light-mode .theme-toggle .sun-icon {
 
 body.light-mode .theme-toggle .moon-icon {
     opacity: 0;
-    transform: rotate(90deg) scale(0.5);
+    transform: rotate(180deg) scale(0.3);
 }
 
 @media (max-width: 768px) {
     .theme-toggle {
         top: 1rem;
         right: 1rem;
-        width: 44px;
-        height: 44px;
+        width: 48px;
+        height: 48px;
     }
 
     .theme-toggle svg {
-        width: 22px;
-        height: 22px;
+        width: 24px;
+        height: 24px;
+    }
+
+    .theme-toggle:hover {
+        transform: scale(1.08) rotate(10deg);
     }
 }

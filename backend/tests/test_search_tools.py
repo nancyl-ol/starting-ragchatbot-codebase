@@ -1,14 +1,18 @@
 """Tests for search_tools module - CourseSearchTool, CourseOutlineTool, and ToolManager"""
-import pytest
+
 from unittest.mock import Mock
-from search_tools import CourseSearchTool, CourseOutlineTool, ToolManager
+
+import pytest
+from search_tools import CourseOutlineTool, CourseSearchTool, ToolManager
 from vector_store import SearchResults
 
 
 class TestCourseSearchTool:
     """Test cases for CourseSearchTool"""
 
-    def test_execute_successful_search_no_filters(self, mock_vector_store, sample_search_results):
+    def test_execute_successful_search_no_filters(
+        self, mock_vector_store, sample_search_results
+    ):
         """Test successful search without any filters"""
         tool = CourseSearchTool(mock_vector_store)
 
@@ -16,9 +20,7 @@ class TestCourseSearchTool:
 
         # Verify search was called with correct parameters
         mock_vector_store.search.assert_called_once_with(
-            query="testing basics",
-            course_name=None,
-            lesson_number=None
+            query="testing basics", course_name=None, lesson_number=None
         )
 
         # Verify result contains formatted content
@@ -27,22 +29,28 @@ class TestCourseSearchTool:
         assert "[Testing Fundamentals - Lesson 2]" in result
         assert "Content from lesson 2" in result
 
-    def test_execute_with_course_name_filter(self, mock_vector_store, sample_search_results):
+    def test_execute_with_course_name_filter(
+        self, mock_vector_store, sample_search_results
+    ):
         """Test search with course name filter"""
         tool = CourseSearchTool(mock_vector_store)
 
-        result = tool.execute(query="testing basics", course_name="Testing Fundamentals")
+        result = tool.execute(
+            query="testing basics", course_name="Testing Fundamentals"
+        )
 
         # Verify search was called with course name
         mock_vector_store.search.assert_called_once_with(
             query="testing basics",
             course_name="Testing Fundamentals",
-            lesson_number=None
+            lesson_number=None,
         )
 
         assert "Testing Fundamentals" in result
 
-    def test_execute_with_lesson_number_filter(self, mock_vector_store, sample_search_results):
+    def test_execute_with_lesson_number_filter(
+        self, mock_vector_store, sample_search_results
+    ):
         """Test search with lesson number filter"""
         tool = CourseSearchTool(mock_vector_store)
 
@@ -50,9 +58,7 @@ class TestCourseSearchTool:
 
         # Verify search was called with lesson number
         mock_vector_store.search.assert_called_once_with(
-            query="testing basics",
-            course_name=None,
-            lesson_number=1
+            query="testing basics", course_name=None, lesson_number=1
         )
 
         assert "Lesson 1" in result
@@ -62,22 +68,20 @@ class TestCourseSearchTool:
         tool = CourseSearchTool(mock_vector_store)
 
         result = tool.execute(
-            query="testing basics",
-            course_name="Testing Fundamentals",
-            lesson_number=2
+            query="testing basics", course_name="Testing Fundamentals", lesson_number=2
         )
 
         # Verify search was called with both filters
         mock_vector_store.search.assert_called_once_with(
-            query="testing basics",
-            course_name="Testing Fundamentals",
-            lesson_number=2
+            query="testing basics", course_name="Testing Fundamentals", lesson_number=2
         )
 
         assert "Testing Fundamentals" in result
         assert "Lesson 2" in result
 
-    def test_execute_empty_results_no_filters(self, mock_vector_store, empty_search_results):
+    def test_execute_empty_results_no_filters(
+        self, mock_vector_store, empty_search_results
+    ):
         """Test handling of empty results without filters"""
         mock_vector_store.search.return_value = empty_search_results
         tool = CourseSearchTool(mock_vector_store)
@@ -86,16 +90,22 @@ class TestCourseSearchTool:
 
         assert result == "No relevant content found."
 
-    def test_execute_empty_results_with_course_filter(self, mock_vector_store, empty_search_results):
+    def test_execute_empty_results_with_course_filter(
+        self, mock_vector_store, empty_search_results
+    ):
         """Test handling of empty results with course filter"""
         mock_vector_store.search.return_value = empty_search_results
         tool = CourseSearchTool(mock_vector_store)
 
-        result = tool.execute(query="testing basics", course_name="Testing Fundamentals")
+        result = tool.execute(
+            query="testing basics", course_name="Testing Fundamentals"
+        )
 
         assert "No relevant content found in course 'Testing Fundamentals'." == result
 
-    def test_execute_empty_results_with_lesson_filter(self, mock_vector_store, empty_search_results):
+    def test_execute_empty_results_with_lesson_filter(
+        self, mock_vector_store, empty_search_results
+    ):
         """Test handling of empty results with lesson filter"""
         mock_vector_store.search.return_value = empty_search_results
         tool = CourseSearchTool(mock_vector_store)
@@ -104,18 +114,21 @@ class TestCourseSearchTool:
 
         assert "No relevant content found in lesson 1." == result
 
-    def test_execute_empty_results_with_both_filters(self, mock_vector_store, empty_search_results):
+    def test_execute_empty_results_with_both_filters(
+        self, mock_vector_store, empty_search_results
+    ):
         """Test handling of empty results with both filters"""
         mock_vector_store.search.return_value = empty_search_results
         tool = CourseSearchTool(mock_vector_store)
 
         result = tool.execute(
-            query="testing basics",
-            course_name="Testing Fundamentals",
-            lesson_number=1
+            query="testing basics", course_name="Testing Fundamentals", lesson_number=1
         )
 
-        assert "No relevant content found in course 'Testing Fundamentals' in lesson 1." == result
+        assert (
+            "No relevant content found in course 'Testing Fundamentals' in lesson 1."
+            == result
+        )
 
     def test_execute_error_handling(self, mock_vector_store, error_search_results):
         """Test handling of search errors"""
@@ -145,7 +158,7 @@ class TestCourseSearchTool:
             documents=["General course content"],
             metadata=[{"course_title": "Testing Fundamentals"}],
             distances=[0.1],
-            error=None
+            error=None,
         )
         mock_vector_store.search.return_value = results
         tool = CourseSearchTool(mock_vector_store)
@@ -180,10 +193,10 @@ class TestCourseSearchTool:
             documents=["Content 1", "Content 2"],
             metadata=[
                 {"course_title": "Course A", "lesson_number": 1},
-                {"course_title": "Course B", "lesson_number": None}
+                {"course_title": "Course B", "lesson_number": None},
             ],
             distances=[0.1, 0.2],
-            error=None
+            error=None,
         )
 
         formatted = tool._format_results(results)
@@ -204,7 +217,9 @@ class TestCourseOutlineTool:
         result = tool.execute(course_name="Testing Fundamentals")
 
         # Verify course name was resolved
-        mock_vector_store._resolve_course_name.assert_called_once_with("Testing Fundamentals")
+        mock_vector_store._resolve_course_name.assert_called_once_with(
+            "Testing Fundamentals"
+        )
 
         # Verify outline contains all expected information
         assert "Course: Testing Fundamentals" in result
@@ -245,19 +260,19 @@ class TestCourseOutlineTool:
                 {
                     "lesson_number": 1,
                     "lesson_title": "Lesson One",
-                    "lesson_link": "https://example.com/lesson-1"
+                    "lesson_link": "https://example.com/lesson-1",
                 },
                 {
                     "lesson_number": 2,
                     "lesson_title": "Lesson Two",
-                    "lesson_link": "https://example.com/lesson-2"
+                    "lesson_link": "https://example.com/lesson-2",
                 },
                 {
                     "lesson_number": 3,
                     "lesson_title": "Lesson Three",
-                    "lesson_link": None
-                }
-            ]
+                    "lesson_link": None,
+                },
+            ],
         }
 
         result = tool._format_outline(course_meta)
@@ -274,11 +289,7 @@ class TestCourseOutlineTool:
         """Test _format_outline with minimal metadata"""
         tool = CourseOutlineTool(mock_vector_store)
 
-        course_meta = {
-            "title": "Minimal Course",
-            "lesson_count": 1,
-            "lessons": []
-        }
+        course_meta = {"title": "Minimal Course", "lesson_count": 1, "lessons": []}
 
         result = tool._format_outline(course_meta)
 

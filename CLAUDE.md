@@ -23,6 +23,24 @@ chmod +x run.sh
 cd backend && uv run uvicorn app:app --reload --port 8000
 ```
 
+### Code Quality Tools
+```bash
+# Format code (black + isort)
+./format.sh
+
+# Run linting checks (flake8 + mypy + format verification)
+./lint.sh
+
+# Run all quality checks and tests
+./quality-check.sh
+
+# Manual commands
+uv run black backend/ main.py          # Format with black
+uv run isort backend/ main.py          # Sort imports
+uv run flake8 backend/ main.py         # Lint with flake8
+uv run mypy backend/ main.py           # Type checking
+```
+
 ### Development Access Points
 - Web Interface: http://localhost:8000
 - API Documentation: http://localhost:8000/docs
@@ -112,6 +130,17 @@ The system maintains conversation state through:
 **Error Handling**: The system gracefully handles missing courses, failed searches, and API errors with user-friendly messages.
 
 **Frontend-Backend Communication**: Uses JSON API with structured request/response models for type safety and clear interfaces.
+
+**Code Quality Standards**:
+- **Black**: Automatic code formatting (88 character line length)
+- **isort**: Import organization (black-compatible profile)
+- **flake8**: Code linting and style checking
+- **mypy**: Static type checking
+- All configuration in `pyproject.toml` and `.flake8`
+- Run `./format.sh` before committing to ensure consistent formatting
+- Run `./lint.sh` to verify code quality standards
+
+**Development Workflow**:
 - always use uv to run the server do not use pip directly
 - make sure to use uv to manage all dependencies
 - use uv to run Python files

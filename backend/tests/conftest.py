@@ -1,15 +1,17 @@
 """Shared test fixtures and configuration for pytest"""
+
 import sys
 from pathlib import Path
-from typing import List, Dict, Any
-from unittest.mock import Mock, MagicMock
+from typing import Any, Dict, List
+from unittest.mock import MagicMock, Mock
+
 import pytest
 
 # Add backend directory to path so we can import modules
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from models import Course, Lesson, CourseChunk
+from models import Course, CourseChunk, Lesson
 from vector_store import SearchResults
 
 
@@ -19,7 +21,7 @@ def sample_lesson():
     return Lesson(
         lesson_number=1,
         title="Introduction to Testing",
-        lesson_link="https://example.com/course/lesson-1"
+        lesson_link="https://example.com/course/lesson-1",
     )
 
 
@@ -35,9 +37,9 @@ def sample_course(sample_lesson):
             Lesson(
                 lesson_number=2,
                 title="Advanced Testing Techniques",
-                lesson_link="https://example.com/course/lesson-2"
-            )
-        ]
+                lesson_link="https://example.com/course/lesson-2",
+            ),
+        ],
     )
 
 
@@ -48,7 +50,7 @@ def sample_course_chunk():
         content="This is a sample chunk of course content about testing fundamentals.",
         course_title="Testing Fundamentals",
         lesson_number=1,
-        chunk_index=0
+        chunk_index=0,
     )
 
 
@@ -58,32 +60,21 @@ def sample_search_results():
     return SearchResults(
         documents=[
             "Content from lesson 1 about testing basics",
-            "Content from lesson 2 about advanced testing"
+            "Content from lesson 2 about advanced testing",
         ],
         metadata=[
-            {
-                "course_title": "Testing Fundamentals",
-                "lesson_number": 1
-            },
-            {
-                "course_title": "Testing Fundamentals",
-                "lesson_number": 2
-            }
+            {"course_title": "Testing Fundamentals", "lesson_number": 1},
+            {"course_title": "Testing Fundamentals", "lesson_number": 2},
         ],
         distances=[0.1, 0.2],
-        error=None
+        error=None,
     )
 
 
 @pytest.fixture
 def empty_search_results():
     """Create empty search results"""
-    return SearchResults(
-        documents=[],
-        metadata=[],
-        distances=[],
-        error=None
-    )
+    return SearchResults(documents=[], metadata=[], distances=[], error=None)
 
 
 @pytest.fixture
@@ -110,14 +101,14 @@ def mock_vector_store(sample_search_results):
                 {
                     "lesson_number": 1,
                     "lesson_title": "Introduction to Testing",
-                    "lesson_link": "https://example.com/course/lesson-1"
+                    "lesson_link": "https://example.com/course/lesson-1",
                 },
                 {
                     "lesson_number": 2,
                     "lesson_title": "Advanced Testing Techniques",
-                    "lesson_link": "https://example.com/course/lesson-2"
-                }
-            ]
+                    "lesson_link": "https://example.com/course/lesson-2",
+                },
+            ],
         }
     ]
     mock_store.get_existing_course_titles.return_value = ["Testing Fundamentals"]
@@ -175,11 +166,9 @@ def mock_tool_manager():
             "description": "Search course materials",
             "input_schema": {
                 "type": "object",
-                "properties": {
-                    "query": {"type": "string"}
-                },
-                "required": ["query"]
-            }
+                "properties": {"query": {"type": "string"}},
+                "required": ["query"],
+            },
         }
     ]
     mock_manager.get_last_sources.return_value = []
@@ -192,7 +181,9 @@ def mock_session_manager():
     """Create a mock SessionManager"""
     mock_manager = Mock()
     mock_manager.create_session.return_value = "test_session_123"
-    mock_manager.get_conversation_history.return_value = "User: Previous question\nAssistant: Previous answer"
+    mock_manager.get_conversation_history.return_value = (
+        "User: Previous question\nAssistant: Previous answer"
+    )
     mock_manager.add_exchange.return_value = None
     mock_manager.clear_session.return_value = None
     return mock_manager
@@ -202,7 +193,10 @@ def mock_session_manager():
 def mock_document_processor(sample_course, sample_course_chunk):
     """Create a mock DocumentProcessor"""
     mock_processor = Mock()
-    mock_processor.process_course_document.return_value = (sample_course, [sample_course_chunk])
+    mock_processor.process_course_document.return_value = (
+        sample_course,
+        [sample_course_chunk],
+    )
     return mock_processor
 
 
@@ -215,6 +209,7 @@ def mock_ai_generator():
 
 
 # Multi-round tool calling fixtures
+
 
 @pytest.fixture
 def mock_anthropic_response_with_second_tool():
@@ -248,33 +243,172 @@ def mock_anthropic_final_response():
 def mock_two_round_responses(
     mock_anthropic_response_with_tool,
     mock_anthropic_response_with_second_tool,
-    mock_anthropic_final_response
+    mock_anthropic_final_response,
 ):
     """Create a sequence of responses for two-round tool calling"""
     return [
-        mock_anthropic_response_with_tool,      # Round 1: search_course_content
+        mock_anthropic_response_with_tool,  # Round 1: search_course_content
         mock_anthropic_response_with_second_tool,  # Round 2: get_course_outline
-        mock_anthropic_final_response           # Final: text response
+        mock_anthropic_final_response,  # Final: text response
     ]
 
 
 @pytest.fixture
-def mock_max_rounds_responses(mock_anthropic_response_with_tool, mock_anthropic_final_response):
+def mock_max_rounds_responses(
+    mock_anthropic_response_with_tool, mock_anthropic_final_response
+):
     """Create responses where Claude exhausts max rounds"""
     return [
         mock_anthropic_response_with_tool,  # Round 1: tool_use
         mock_anthropic_response_with_tool,  # Round 2: tool_use (exhausts limit)
-        mock_anthropic_final_response       # Final call without tools
+        mock_anthropic_final_response,  # Final call without tools
     ]
 
 
 @pytest.fixture
 def mock_early_termination_responses(
-    mock_anthropic_response_with_tool,
-    mock_anthropic_final_response
+    mock_anthropic_response_with_tool, mock_anthropic_final_response
 ):
     """Create responses where Claude stops using tools after one round"""
     return [
         mock_anthropic_response_with_tool,  # Round 1: tool_use
-        mock_anthropic_final_response       # Round 2: Claude decides to answer
+        mock_anthropic_final_response,  # Round 2: Claude decides to answer
     ]
+
+
+# API Testing Fixtures
+
+
+@pytest.fixture
+def mock_config():
+    """Mock configuration for testing"""
+    from config import Config
+
+    config = Config()
+    config.ANTHROPIC_API_KEY = "test-api-key"
+    config.ANTHROPIC_MODEL = "claude-sonnet-4-20250514"
+    config.CHUNK_SIZE = 800
+    config.CHUNK_OVERLAP = 100
+    config.MAX_RESULTS = 5
+    config.MAX_HISTORY = 2
+    config.CHROMA_PATH = "./test_chroma_db"
+
+    return config
+
+
+@pytest.fixture
+def mock_rag_system(mock_config):
+    """Mock RAG system for API testing"""
+    mock = MagicMock()
+    mock.config = mock_config
+    mock.session_manager.create_session.return_value = "test-session-123"
+    mock.query.return_value = (
+        "This is a test response about course materials.",
+        ["Source 1: Test course material", "Source 2: Another reference"],
+    )
+    mock.get_course_analytics.return_value = {
+        "total_courses": 3,
+        "course_titles": ["Course 1", "Course 2", "Course 3"],
+    }
+
+    return mock
+
+
+@pytest.fixture
+def test_app(mock_rag_system):
+    """
+    Create a test FastAPI app without static file mounting.
+    This avoids issues with missing frontend directory in test environment.
+    """
+    from typing import List, Optional, Union
+
+    from fastapi import FastAPI, HTTPException
+    from fastapi.middleware.cors import CORSMiddleware
+    from pydantic import BaseModel
+
+    # Create test app
+    app = FastAPI(title="Course Materials RAG System - Test", root_path="")
+
+    # Add CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Define Pydantic models (same as in app.py)
+    class QueryRequest(BaseModel):
+        query: str
+        session_id: Optional[str] = None
+
+    class SourceItem(BaseModel):
+        text: str
+        url: Optional[str] = None
+
+    class QueryResponse(BaseModel):
+        answer: str
+        sources: List[Union[str, SourceItem]]
+        session_id: str
+
+    class CourseStats(BaseModel):
+        total_courses: int
+        course_titles: List[str]
+
+    # Define API endpoints (same as in app.py)
+    @app.post("/api/query", response_model=QueryResponse)
+    async def query_documents(request: QueryRequest):
+        """Process a query and return response with sources"""
+        try:
+            session_id = request.session_id
+            if not session_id:
+                session_id = mock_rag_system.session_manager.create_session()
+
+            answer, sources = mock_rag_system.query(request.query, session_id)
+
+            return QueryResponse(answer=answer, sources=sources, session_id=session_id)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.get("/api/courses", response_model=CourseStats)
+    async def get_course_stats():
+        """Get course analytics and statistics"""
+        try:
+            analytics = mock_rag_system.get_course_analytics()
+            return CourseStats(
+                total_courses=analytics["total_courses"],
+                course_titles=analytics["course_titles"],
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.get("/")
+    async def root():
+        """Root endpoint for health check"""
+        return {"status": "ok", "message": "RAG System API is running"}
+
+    return app
+
+
+@pytest.fixture
+def test_client(test_app):
+    """Create a test client for the FastAPI app"""
+    from fastapi.testclient import TestClient
+
+    return TestClient(test_app)
+
+
+@pytest.fixture
+def sample_query_request():
+    """Sample query request data for testing"""
+    return {
+        "query": "What is covered in the machine learning course?",
+        "session_id": "test-session-123",
+    }
+
+
+@pytest.fixture
+def sample_query_request_no_session():
+    """Sample query request without session ID"""
+    return {"query": "Tell me about deep learning basics"}

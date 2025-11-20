@@ -1,19 +1,21 @@
 """Tests for rag_system module - RAGSystem integration and orchestration"""
-import pytest
-from unittest.mock import Mock, patch, MagicMock, call
-import tempfile
+
 import os
+import tempfile
+from unittest.mock import MagicMock, Mock, call, patch
+
+import pytest
+from models import Course, CourseChunk, Lesson
 from rag_system import RAGSystem
-from models import Course, Lesson, CourseChunk
 
 
 class TestRAGSystemInitialization:
     """Test RAGSystem initialization and component setup"""
 
-    @patch('rag_system.SessionManager')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.DocumentProcessor')
+    @patch("rag_system.SessionManager")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.DocumentProcessor")
     def test_initialization_creates_all_components(
         self, mock_doc_processor, mock_vector_store, mock_ai_gen, mock_session_mgr
     ):
@@ -37,10 +39,10 @@ class TestRAGSystemInitialization:
         mock_ai_gen.assert_called_once_with("test_key", "test_model")
         mock_session_mgr.assert_called_once_with(2)
 
-    @patch('rag_system.SessionManager')
-    @patch('rag_system.AIGenerator')
-    @patch('rag_system.VectorStore')
-    @patch('rag_system.DocumentProcessor')
+    @patch("rag_system.SessionManager")
+    @patch("rag_system.AIGenerator")
+    @patch("rag_system.VectorStore")
+    @patch("rag_system.DocumentProcessor")
     def test_initialization_registers_tools(
         self, mock_doc_processor, mock_vector_store, mock_ai_gen, mock_session_mgr
     ):
@@ -66,12 +68,20 @@ class TestRAGSystemAddCourseDocument:
     """Test adding individual course documents"""
 
     @pytest.fixture
-    def rag_system(self, mock_document_processor, mock_vector_store, mock_ai_generator, mock_session_manager):
+    def rag_system(
+        self,
+        mock_document_processor,
+        mock_vector_store,
+        mock_ai_generator,
+        mock_session_manager,
+    ):
         """Create RAGSystem with mocked components"""
-        with patch('rag_system.DocumentProcessor', return_value=mock_document_processor), \
-             patch('rag_system.VectorStore', return_value=mock_vector_store), \
-             patch('rag_system.AIGenerator', return_value=mock_ai_generator), \
-             patch('rag_system.SessionManager', return_value=mock_session_manager):
+        with (
+            patch("rag_system.DocumentProcessor", return_value=mock_document_processor),
+            patch("rag_system.VectorStore", return_value=mock_vector_store),
+            patch("rag_system.AIGenerator", return_value=mock_ai_generator),
+            patch("rag_system.SessionManager", return_value=mock_session_manager),
+        ):
 
             mock_config = Mock()
             mock_config.CHUNK_SIZE = 800
@@ -85,19 +95,28 @@ class TestRAGSystemAddCourseDocument:
 
             return RAGSystem(mock_config)
 
-    def test_add_course_document_success(self, rag_system, sample_course, sample_course_chunk):
+    def test_add_course_document_success(
+        self, rag_system, sample_course, sample_course_chunk
+    ):
         """Test successful addition of course document"""
         # Setup mock to return course and chunks
         chunks = [sample_course_chunk]
-        rag_system.document_processor.process_course_document.return_value = (sample_course, chunks)
+        rag_system.document_processor.process_course_document.return_value = (
+            sample_course,
+            chunks,
+        )
 
         course, chunk_count = rag_system.add_course_document("/path/to/course.txt")
 
         # Verify document was processed
-        rag_system.document_processor.process_course_document.assert_called_once_with("/path/to/course.txt")
+        rag_system.document_processor.process_course_document.assert_called_once_with(
+            "/path/to/course.txt"
+        )
 
         # Verify metadata and content were added to vector store
-        rag_system.vector_store.add_course_metadata.assert_called_once_with(sample_course)
+        rag_system.vector_store.add_course_metadata.assert_called_once_with(
+            sample_course
+        )
         rag_system.vector_store.add_course_content.assert_called_once_with(chunks)
 
         # Verify return values
@@ -107,7 +126,9 @@ class TestRAGSystemAddCourseDocument:
     def test_add_course_document_error_handling(self, rag_system, capsys):
         """Test error handling when document processing fails"""
         # Setup mock to raise exception
-        rag_system.document_processor.process_course_document.side_effect = Exception("File not found")
+        rag_system.document_processor.process_course_document.side_effect = Exception(
+            "File not found"
+        )
 
         course, chunk_count = rag_system.add_course_document("/invalid/path.txt")
 
@@ -123,11 +144,29 @@ class TestRAGSystemAddCourseDocument:
     def test_add_course_document_with_multiple_chunks(self, rag_system, sample_course):
         """Test adding document with multiple chunks"""
         chunks = [
-            CourseChunk(content="Content 1", course_title="Test Course", lesson_number=1, chunk_index=0),
-            CourseChunk(content="Content 2", course_title="Test Course", lesson_number=1, chunk_index=1),
-            CourseChunk(content="Content 3", course_title="Test Course", lesson_number=2, chunk_index=0)
+            CourseChunk(
+                content="Content 1",
+                course_title="Test Course",
+                lesson_number=1,
+                chunk_index=0,
+            ),
+            CourseChunk(
+                content="Content 2",
+                course_title="Test Course",
+                lesson_number=1,
+                chunk_index=1,
+            ),
+            CourseChunk(
+                content="Content 3",
+                course_title="Test Course",
+                lesson_number=2,
+                chunk_index=0,
+            ),
         ]
-        rag_system.document_processor.process_course_document.return_value = (sample_course, chunks)
+        rag_system.document_processor.process_course_document.return_value = (
+            sample_course,
+            chunks,
+        )
 
         course, chunk_count = rag_system.add_course_document("/path/to/course.txt")
 
@@ -139,12 +178,20 @@ class TestRAGSystemAddCourseFolder:
     """Test adding multiple course documents from a folder"""
 
     @pytest.fixture
-    def rag_system_with_mocks(self, mock_document_processor, mock_vector_store, mock_ai_generator, mock_session_manager):
+    def rag_system_with_mocks(
+        self,
+        mock_document_processor,
+        mock_vector_store,
+        mock_ai_generator,
+        mock_session_manager,
+    ):
         """Create RAGSystem with all mocked components"""
-        with patch('rag_system.DocumentProcessor', return_value=mock_document_processor), \
-             patch('rag_system.VectorStore', return_value=mock_vector_store), \
-             patch('rag_system.AIGenerator', return_value=mock_ai_generator), \
-             patch('rag_system.SessionManager', return_value=mock_session_manager):
+        with (
+            patch("rag_system.DocumentProcessor", return_value=mock_document_processor),
+            patch("rag_system.VectorStore", return_value=mock_vector_store),
+            patch("rag_system.AIGenerator", return_value=mock_ai_generator),
+            patch("rag_system.SessionManager", return_value=mock_session_manager),
+        ):
 
             mock_config = Mock()
             mock_config.CHUNK_SIZE = 800
@@ -158,27 +205,33 @@ class TestRAGSystemAddCourseFolder:
 
             return RAGSystem(mock_config)
 
-    def test_add_course_folder_with_new_courses(self, rag_system_with_mocks, sample_course, sample_course_chunk):
+    def test_add_course_folder_with_new_courses(
+        self, rag_system_with_mocks, sample_course, sample_course_chunk
+    ):
         """Test adding folder with new courses"""
         system = rag_system_with_mocks
 
         # Create temporary directory with test files
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create test files
-            open(os.path.join(temp_dir, "course1.txt"), 'w').close()
-            open(os.path.join(temp_dir, "course2.txt"), 'w').close()
+            open(os.path.join(temp_dir, "course1.txt"), "w").close()
+            open(os.path.join(temp_dir, "course2.txt"), "w").close()
 
             # Mock vector store to return no existing courses
             system.vector_store.get_existing_course_titles.return_value = []
 
             # Mock document processor to return different courses
-            course1 = Course(title="Course 1", course_link=None, instructor=None, lessons=[])
-            course2 = Course(title="Course 2", course_link=None, instructor=None, lessons=[])
+            course1 = Course(
+                title="Course 1", course_link=None, instructor=None, lessons=[]
+            )
+            course2 = Course(
+                title="Course 2", course_link=None, instructor=None, lessons=[]
+            )
             chunks = [sample_course_chunk]
 
             system.document_processor.process_course_document.side_effect = [
                 (course1, chunks),
-                (course2, chunks)
+                (course2, chunks),
             ]
 
             total_courses, total_chunks = system.add_course_folder(temp_dir)
@@ -191,19 +244,26 @@ class TestRAGSystemAddCourseFolder:
             assert system.vector_store.add_course_metadata.call_count == 2
             assert system.vector_store.add_course_content.call_count == 2
 
-    def test_add_course_folder_skips_existing_courses(self, rag_system_with_mocks, sample_course, sample_course_chunk):
+    def test_add_course_folder_skips_existing_courses(
+        self, rag_system_with_mocks, sample_course, sample_course_chunk
+    ):
         """Test that existing courses are skipped"""
         system = rag_system_with_mocks
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            open(os.path.join(temp_dir, "course1.txt"), 'w').close()
+            open(os.path.join(temp_dir, "course1.txt"), "w").close()
 
             # Mock vector store to return existing course
-            system.vector_store.get_existing_course_titles.return_value = ["Testing Fundamentals"]
+            system.vector_store.get_existing_course_titles.return_value = [
+                "Testing Fundamentals"
+            ]
 
             # Mock document processor
             chunks = [sample_course_chunk]
-            system.document_processor.process_course_document.return_value = (sample_course, chunks)
+            system.document_processor.process_course_document.return_value = (
+                sample_course,
+                chunks,
+            )
 
             total_courses, total_chunks = system.add_course_folder(temp_dir)
 
@@ -212,18 +272,25 @@ class TestRAGSystemAddCourseFolder:
             assert total_chunks == 0
             system.vector_store.add_course_metadata.assert_not_called()
 
-    def test_add_course_folder_with_clear_existing(self, rag_system_with_mocks, sample_course, sample_course_chunk):
+    def test_add_course_folder_with_clear_existing(
+        self, rag_system_with_mocks, sample_course, sample_course_chunk
+    ):
         """Test clearing existing data before adding"""
         system = rag_system_with_mocks
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            open(os.path.join(temp_dir, "course1.txt"), 'w').close()
+            open(os.path.join(temp_dir, "course1.txt"), "w").close()
 
             system.vector_store.get_existing_course_titles.return_value = []
             chunks = [sample_course_chunk]
-            system.document_processor.process_course_document.return_value = (sample_course, chunks)
+            system.document_processor.process_course_document.return_value = (
+                sample_course,
+                chunks,
+            )
 
-            total_courses, total_chunks = system.add_course_folder(temp_dir, clear_existing=True)
+            total_courses, total_chunks = system.add_course_folder(
+                temp_dir, clear_existing=True
+            )
 
             # Verify clear was called
             system.vector_store.clear_all_data.assert_called_once()
@@ -237,34 +304,43 @@ class TestRAGSystemAddCourseFolder:
         assert total_courses == 0
         assert total_chunks == 0
 
-    def test_add_course_folder_ignores_non_document_files(self, rag_system_with_mocks, sample_course, sample_course_chunk):
+    def test_add_course_folder_ignores_non_document_files(
+        self, rag_system_with_mocks, sample_course, sample_course_chunk
+    ):
         """Test that non-document files are ignored"""
         system = rag_system_with_mocks
 
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create various file types
-            open(os.path.join(temp_dir, "course.txt"), 'w').close()
-            open(os.path.join(temp_dir, "image.jpg"), 'w').close()
-            open(os.path.join(temp_dir, "data.json"), 'w').close()
+            open(os.path.join(temp_dir, "course.txt"), "w").close()
+            open(os.path.join(temp_dir, "image.jpg"), "w").close()
+            open(os.path.join(temp_dir, "data.json"), "w").close()
 
             system.vector_store.get_existing_course_titles.return_value = []
             chunks = [sample_course_chunk]
-            system.document_processor.process_course_document.return_value = (sample_course, chunks)
+            system.document_processor.process_course_document.return_value = (
+                sample_course,
+                chunks,
+            )
 
             total_courses, total_chunks = system.add_course_folder(temp_dir)
 
             # Only .txt file should be processed
             assert system.document_processor.process_course_document.call_count == 1
 
-    def test_add_course_folder_handles_processing_errors(self, rag_system_with_mocks, capsys):
+    def test_add_course_folder_handles_processing_errors(
+        self, rag_system_with_mocks, capsys
+    ):
         """Test handling of errors during folder processing"""
         system = rag_system_with_mocks
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            open(os.path.join(temp_dir, "bad_course.txt"), 'w').close()
+            open(os.path.join(temp_dir, "bad_course.txt"), "w").close()
 
             system.vector_store.get_existing_course_titles.return_value = []
-            system.document_processor.process_course_document.side_effect = Exception("Parse error")
+            system.document_processor.process_course_document.side_effect = Exception(
+                "Parse error"
+            )
 
             total_courses, total_chunks = system.add_course_folder(temp_dir)
 
@@ -280,12 +356,21 @@ class TestRAGSystemQuery:
     """Test query processing and RAG pipeline"""
 
     @pytest.fixture
-    def rag_system(self, mock_document_processor, mock_vector_store, mock_ai_generator, mock_session_manager, mock_tool_manager):
+    def rag_system(
+        self,
+        mock_document_processor,
+        mock_vector_store,
+        mock_ai_generator,
+        mock_session_manager,
+        mock_tool_manager,
+    ):
         """Create RAGSystem with mocked components"""
-        with patch('rag_system.DocumentProcessor', return_value=mock_document_processor), \
-             patch('rag_system.VectorStore', return_value=mock_vector_store), \
-             patch('rag_system.AIGenerator', return_value=mock_ai_generator), \
-             patch('rag_system.SessionManager', return_value=mock_session_manager):
+        with (
+            patch("rag_system.DocumentProcessor", return_value=mock_document_processor),
+            patch("rag_system.VectorStore", return_value=mock_vector_store),
+            patch("rag_system.AIGenerator", return_value=mock_ai_generator),
+            patch("rag_system.SessionManager", return_value=mock_session_manager),
+        ):
 
             mock_config = Mock()
             mock_config.CHUNK_SIZE = 800
@@ -317,14 +402,22 @@ class TestRAGSystemQuery:
         # Verify response is returned
         assert response == "Generated response from AI"
 
-    def test_query_with_session(self, rag_system, mock_ai_generator, mock_session_manager):
+    def test_query_with_session(
+        self, rag_system, mock_ai_generator, mock_session_manager
+    ):
         """Test query processing with session ID"""
-        mock_session_manager.get_conversation_history.return_value = "Previous conversation"
+        mock_session_manager.get_conversation_history.return_value = (
+            "Previous conversation"
+        )
 
-        response, sources = rag_system.query("Follow-up question", session_id="session_123")
+        response, sources = rag_system.query(
+            "Follow-up question", session_id="session_123"
+        )
 
         # Verify history was retrieved
-        mock_session_manager.get_conversation_history.assert_called_once_with("session_123")
+        mock_session_manager.get_conversation_history.assert_called_once_with(
+            "session_123"
+        )
 
         # Verify AI generator was called with history
         call_args = mock_ai_generator.generate_response.call_args[1]
@@ -332,9 +425,7 @@ class TestRAGSystemQuery:
 
         # Verify conversation was updated
         mock_session_manager.add_exchange.assert_called_once_with(
-            "session_123",
-            "Follow-up question",
-            "Generated response from AI"
+            "session_123", "Follow-up question", "Generated response from AI"
         )
 
     def test_query_retrieves_sources(self, rag_system, mock_tool_manager):
@@ -355,7 +446,9 @@ class TestRAGSystemQuery:
         # Verify sources were reset
         mock_tool_manager.reset_sources.assert_called_once()
 
-    def test_query_passes_tools_to_ai(self, rag_system, mock_ai_generator, mock_tool_manager):
+    def test_query_passes_tools_to_ai(
+        self, rag_system, mock_ai_generator, mock_tool_manager
+    ):
         """Test that tool definitions are passed to AI generator"""
         tool_defs = [{"name": "search_tool", "description": "Search"}]
         mock_tool_manager.get_tool_definitions.return_value = tool_defs
@@ -382,12 +475,20 @@ class TestRAGSystemAnalytics:
     """Test course analytics functionality"""
 
     @pytest.fixture
-    def rag_system(self, mock_document_processor, mock_vector_store, mock_ai_generator, mock_session_manager):
+    def rag_system(
+        self,
+        mock_document_processor,
+        mock_vector_store,
+        mock_ai_generator,
+        mock_session_manager,
+    ):
         """Create RAGSystem with mocked components"""
-        with patch('rag_system.DocumentProcessor', return_value=mock_document_processor), \
-             patch('rag_system.VectorStore', return_value=mock_vector_store), \
-             patch('rag_system.AIGenerator', return_value=mock_ai_generator), \
-             patch('rag_system.SessionManager', return_value=mock_session_manager):
+        with (
+            patch("rag_system.DocumentProcessor", return_value=mock_document_processor),
+            patch("rag_system.VectorStore", return_value=mock_vector_store),
+            patch("rag_system.AIGenerator", return_value=mock_ai_generator),
+            patch("rag_system.SessionManager", return_value=mock_session_manager),
+        ):
 
             mock_config = Mock()
             mock_config.CHUNK_SIZE = 800
@@ -404,7 +505,11 @@ class TestRAGSystemAnalytics:
     def test_get_course_analytics(self, rag_system, mock_vector_store):
         """Test getting course analytics"""
         mock_vector_store.get_course_count.return_value = 3
-        mock_vector_store.get_existing_course_titles.return_value = ["Course 1", "Course 2", "Course 3"]
+        mock_vector_store.get_existing_course_titles.return_value = [
+            "Course 1",
+            "Course 2",
+            "Course 3",
+        ]
 
         analytics = rag_system.get_course_analytics()
 
